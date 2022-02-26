@@ -15,7 +15,13 @@
 ---@class TextDocument
 ---@field selectionRange boolean
 
+local client_module = require('lsp-selection-range.client')
 local M = {}
+
+--- Retrieves the client to use to retrieve the selection range
+---
+---@return Client|nil #`nil` if no clients have the `selectionRangeProvider` capability
+M.get_client = client_module.select
 
 --- Update client capabilities to handle the selection range feature
 ---
