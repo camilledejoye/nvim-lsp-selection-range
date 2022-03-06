@@ -8,6 +8,7 @@
 ---@class Client
 ---@field name string
 ---@field server_capabilities ServerCapabilities
+---@field request_sync fun(method: string, params: table, timeout_ms: number, bufnr: number)
 
 local if_nil = vim.F.if_nil
 local M = {}
