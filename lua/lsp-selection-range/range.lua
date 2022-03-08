@@ -1,24 +1,17 @@
 ---@class Position
----@field line number #1-based line number
----@field character number #1-based character number
-
----@class LspPosition
----@field line number #0-based line number
----@field character number #0-based character number
+---@field line number #Line number (0-based)
+---@field character number #Character position in the line (0-based)
 
 ---@class LspRange
 ---
---- Uses 0-based indices for lines and characters and is end-exclusive.
---- https://microsoft.github.io/language-server-protocol/specification.html#range
----
----@field start LspPosition
----@field end LspPosition
-
-local get_line_byte_from_position = vim.lsp.util._get_line_byte_from_position
+---@field start Position
+---@field end Position
 
 ---@class Range
 ---
---- Uses 1-based indices for lines and characters and is end-inclusive.
+--- Uses 0-based indices for lines as well as characters and is end-inclusive.
+--- Follow the same rule as defined in LSP, see:
+--- https://microsoft.github.io/language-server-protocol/specification.html#range
 ---
 ---@field start Position
 ---@field end Position
@@ -66,31 +59,13 @@ function M.new(start_line, start_character, end_line, end_character)
   }, Range)
 end
 
---- Creates a new Range from an LspRange
----
---- LSP uses UTF indices to represent a character's position while Neovim uses bytes.
---- The buffer is required to be able to have the correct position in case of multibyte character in the line.
+--- Creates a new Range from an LspRange table
 ---
 ---@param lsp_range LspRange
----@param bufnr number
 ---
 ---@return Range
-function M.from_lsp(bufnr, lsp_range)
-  local range = M.new(
-    lsp_range.start.line + 1,
-    get_line_byte_from_position(bufnr, lsp_range.start) + 1,
-    lsp_range['end'].line + 1,
-    get_line_byte_from_position(bufnr, lsp_range['end'])
-  )
-
-  -- In LSP a end range character of zero means to select the previous line ending character(s)
-  -- In Neovim it's represented by a very large number, see :h getpos()
-  if 0 == range['end'].character then
-    range['end'].line = range['end'].line - 1
-    range['end'].character = 2147483647
-  end
-
-  return range
+function M.from_table(lsp_range)
+  return setmetatable(lsp_range, Range)
 end
 
 return M

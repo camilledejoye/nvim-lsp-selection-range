@@ -1,14 +1,24 @@
 local selection = require('lsp-selection-range.selection')
 local Range = require('lsp-selection-range.range')
-local utils = require('lsp-selection-range.tests.helpers.utils')
+local stub = require('luassert.stub')
+local notify
 
 describe('selection', function()
   before_each(function()
-    utils.replace_buffer_content([[
-here is some text
-to play with
-    ]])
-    vim.cmd('normal! \27') -- Leave insert mode
+    vim.cmd('edit ./lua/lsp-selection-range/tests/fixtures/multibyte.lua')
+
+    notify = stub(vim, 'notify')
+    notify.invokes(function(msg, log_level, _)
+      if vim.log.levels.ERROR == log_level then
+        error(msg)
+      else
+        error('Unexpected notification: ' .. msg)
+      end
+    end)
+  end)
+
+  after_each(function()
+    notify:revert()
   end)
 
   describe('current()', function()
@@ -17,25 +27,33 @@ to play with
     end)
 
     it('returns a Range matching the visual selection done from start to end', function()
-      vim.cmd('normal! gg02wve') -- selects the word "some" with the cursor being on the "e"
+      vim.cmd('normal! gg06wve') -- selects the word "multibyte" from left to right
 
       local selected_range = selection.current()
 
-      assert.same(Range.new(1, 9, 1, 12), selected_range)
+      assert.same(Range.new(0, 25, 0, 34), selected_range)
     end)
 
     it('returns a Range matching the visual selection done from end to start', function()
-      vim.cmd('normal! gg03evb') -- selects the word "some" with the cursor being on the "s"
+      vim.cmd('normal! gg07evb') -- selects the word "multibyte" from right to left
 
       local selected_range = selection.current()
 
-      assert.same(Range.new(1, 9, 1, 12), selected_range)
+      assert.same(Range.new(0, 25, 0, 34), selected_range)
     end)
   end)
 
   describe('select(range)', function()
-    it('visually select the provided range', function()
-      local range = Range.new(1, 9, 1, 12)
+    it('visually selects a simple provided range', function()
+      local range = Range.new(0, 25, 0, 34)
+
+      selection.select(range)
+
+      assert.same(range, selection.current())
+    end)
+
+    it('visually selects a simple provided range', function()
+      local range = Range.new(1, 6, 1, 24)
 
       selection.select(range)
 
@@ -43,8 +61,8 @@ to play with
     end)
 
     it('replaces existing visual selection with the provided range', function()
-      local range = Range.new(2, 4, 2, 7)
-      selection.select(Range.new(1, 9, 1, 12))
+      local range = Range.new(1, 6, 1, 24)
+      selection.select(Range.new(0, 25, 0, 34))
 
       selection.select(range)
 
@@ -52,12 +70,21 @@ to play with
     end)
 
     it('preserve the value of `virtualedit` even when an error happens', function()
+      notify.invokes(function() end)
       vim.api.nvim_set_option('virtualedit', 'all')
 
-      selection.select(Range.new(-1, 9, 1, 12))
+      selection.select(Range.new(0, 25, -1, 34))
 
       assert.same('all', vim.api.nvim_get_option('virtualedit'))
       assert.same(nil, selection:current())
+    end)
+
+    it('visually selects a range starting and ending after the last characters', function()
+      local range = Range.new(1, 28, 5, 0)
+
+      selection.select(range)
+
+      assert.same(range, selection.current())
     end)
   end)
 end)

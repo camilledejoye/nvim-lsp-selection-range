@@ -23,36 +23,14 @@ describe('Range', function()
     end)
   end)
 
-  describe('from_lsp()', function()
-    before_each(function()
-      vim.cmd('edit ./lua/lsp-selection-range/tests/fixtures/multibyte.lua')
-    end)
-
+  describe('from_table()', function()
     it('creates a range object from an LSP range', function()
-      local range = Range.from_lsp(0, {
+      local range = Range.from_table({
         start = { line = 2, character = 2 },
         ['end'] = { line = 4, character = 21 },
       })
 
-      assert.same(Range.new(3, 3, 5, 21), range)
-    end)
-
-    it('creates a range object when the end position includes the line ending character(s)', function()
-      local range = Range.from_lsp(0, {
-        start = { line = 1, character = 28 },
-        ['end'] = { line = 5, character = 0 },
-      })
-
-      assert.same(Range.new(2, 29, 5, 2147483647), range)
-    end)
-
-    it('creates a range while taking into account multibyte character', function()
-      local range = Range.from_lsp(0, {
-        start = { line = 0, character = 25 },
-        ['end'] = { line = 0, character = 34 },
-      })
-
-      assert.same(Range.new(1, 28, 1, 36), range)
+      assert.same(Range.new(2, 2, 4, 21), range)
     end)
   end)
 
