@@ -67,6 +67,21 @@ local function request_selection_range_under_cursor()
   return result
 end
 
+--- Retrieve the last selection ranged used to visually select something in order to expand it
+---
+---@return SelectionRange|nil
+local function get_last_selection_range()
+  local success, result = pcall(vim.api.nvim_buf_get_var, 0, 'lsp_selection_range_last_selection_range')
+  return success and result or nil
+end
+
+--- Saves the selection range for the buffer so that we can expand the selection later on
+---
+---@param selection_range SelectionRange|nil
+local function remember_last_selection_range(selection_range)
+  vim.api.nvim_buf_set_var(0, 'lsp_selection_range_last_selection_range', selection_range)
+end
+
 --- Retrieves the client to use to retrieve the selection range
 ---
 ---@return Client|nil #`nil` if no clients have the `selectionRangeProvider` capability
@@ -96,7 +111,35 @@ function M.trigger()
     return
   end
 
-  selection.select(Range.from_lsp(0, selection_range.range))
+  remember_last_selection_range(selection_range)
+  selection.select(Range.from_table(selection_range.range))
+end
+
+--- Expand the visual selection
+function M.expand()
+  local selection_range = get_last_selection_range()
+  local visual_selection = selection.current()
+
+  if not visual_selection then
+    return nil
+  end
+
+  if selection_range and visual_selection == Range.from_table(selection_range.range) then
+    selection_range = selection_range.parent or nil
+  else
+    selection_range = request_selection_range_under_cursor()
+
+    while nil ~= selection_range and not Range.from_table(selection_range.range):contains(visual_selection) do
+      selection_range = selection_range.parent
+    end
+  end
+
+  if nil == selection_range then
+    return
+  end
+
+  remember_last_selection_range(selection_range)
+  selection.select(Range.from_table(selection_range.range))
 end
 
 return M
