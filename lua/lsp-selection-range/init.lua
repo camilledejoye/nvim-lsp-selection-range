@@ -42,7 +42,7 @@ local function request_selection_range_under_cursor()
     textDocument = position_params.textDocument,
     positions = { position_params.position },
   }
-  local res, err = client.request_sync(method, params)
+  local res, err = client.request_sync(method, params, nil, nil)
 
   if 'string' == type(err) then
     vim.notify(('%s: timeout: %s'):format(client.name, err), vim.log.levels.ERROR)

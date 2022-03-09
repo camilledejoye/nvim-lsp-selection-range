@@ -2,11 +2,11 @@ local lsp_selection_range = require('lsp-selection-range')
 local Range = require('lsp-selection-range.range')
 local selection = require('lsp-selection-range.selection')
 local simple_php = require('lsp-selection-range.tests.helpers.simple-php')
+local stub = require('luassert.stub')
+local buf_get_clients
 
 local function use_client(client)
-  lsp_selection_range.get_client = function()
-    return client
-  end
+  buf_get_clients.returns({ client })
 end
 
 describe('update_capabilities()', function()
@@ -46,11 +46,13 @@ end
 
 describe('trigger()', function()
   before_each(function()
+    buf_get_clients = stub(vim.lsp, 'buf_get_clients')
     vim.cmd('edit ' .. simple_php.file_path)
     use_client(nil)
   end)
 
   after_each(function()
+    buf_get_clients:revert()
     vim.cmd('bdelete!')
   end)
 
@@ -76,11 +78,13 @@ end)
 
 describe('expand()', function()
   before_each(function()
+    buf_get_clients = stub(vim.lsp, 'buf_get_clients')
     vim.cmd('edit ' .. simple_php.file_path)
     use_client(simple_php.get_client())
   end)
 
   after_each(function()
+    buf_get_clients:revert()
     vim.cmd('bdelete!')
   end)
 
