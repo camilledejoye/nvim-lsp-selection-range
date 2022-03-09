@@ -1,6 +1,7 @@
 local lsp_selection_range = require('lsp-selection-range')
 local Range = require('lsp-selection-range.range')
 local selection = require('lsp-selection-range.selection')
+local utils = require('lsp-selection-range.tests.helpers.utils')
 local simple_php = require('lsp-selection-range.tests.helpers.simple-php')
 local stub = require('luassert.stub')
 local buf_get_clients
@@ -39,11 +40,6 @@ describe('update_capabilities()', function()
   end)
 end)
 
----@param position Position
-local function move_cursor_to(position)
-  vim.api.nvim_win_set_cursor(0, { position.line + 1, position.character })
-end
-
 describe('trigger()', function()
   before_each(function()
     buf_get_clients = stub(vim.lsp, 'buf_get_clients')
@@ -68,7 +64,7 @@ describe('trigger()', function()
   it('selects the first range returned by the client', function()
     local expected_visual_range = Range.from_table(simple_php.selection_ranges.from_last_return.variable.range)
     use_client(simple_php.get_client())
-    move_cursor_to(simple_php.positions.on_last_return_var)
+    utils.move_cursor_to(simple_php.positions.on_last_return_var)
 
     lsp_selection_range.trigger()
 
@@ -89,7 +85,7 @@ describe('expand()', function()
   end)
 
   it('does nothing when not in visual mode', function()
-    move_cursor_to(simple_php.positions.on_last_return_var)
+    utils.move_cursor_to(simple_php.positions.on_last_return_var)
 
     lsp_selection_range.expand()
 
@@ -98,7 +94,7 @@ describe('expand()', function()
 
   it('selects the parent of the current selection range when it matches the visual selection', function()
     local expected_selection_range = simple_php.selection_ranges.from_last_return.return_stmt
-    move_cursor_to(simple_php.positions.on_last_return_var)
+    utils.move_cursor_to(simple_php.positions.on_last_return_var)
     lsp_selection_range.trigger()
 
     lsp_selection_range.expand()
@@ -108,7 +104,7 @@ describe('expand()', function()
 
   it('can be chained', function()
     local expected_selection_range = simple_php.selection_ranges.from_last_return.return_stmt
-    move_cursor_to(simple_php.positions.on_last_return_var)
+    utils.move_cursor_to(simple_php.positions.on_last_return_var)
     lsp_selection_range.trigger()
 
     lsp_selection_range.expand()

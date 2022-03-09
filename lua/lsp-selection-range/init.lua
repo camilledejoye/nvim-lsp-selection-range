@@ -36,35 +36,7 @@ local function request_selection_range_under_cursor()
     return
   end
 
-  local method = 'textDocument/selectionRange'
-  local position_params = vim.lsp.util.make_position_params()
-  local params = {
-    textDocument = position_params.textDocument,
-    positions = { position_params.position },
-  }
-  local res, err = client.request_sync(method, params, nil, nil)
-
-  if 'string' == type(err) then
-    vim.notify(('%s: timeout: %s'):format(client.name, err), vim.log.levels.ERROR)
-    vim.api.nvim_command('redraw')
-    return
-  end
-
-  if nil ~= res.err then
-    err = res.err
-    vim.notify(('%s: %s: %s'):format(client.name, tostring(err.code), err.message), vim.log.levels.ERROR)
-    vim.api.nvim_command('redraw')
-    return
-  end
-
-  local result = res.result
-
-  if 'table' == type(result) then
-    -- Since we only send one position in the request we will only have one result
-    result = result[1]
-  end
-
-  return result
+  return client_module.fetch_selection_range(client)
 end
 
 --- Retrieve the last selection ranged used to visually select something in order to expand it

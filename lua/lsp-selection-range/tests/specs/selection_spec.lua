@@ -19,6 +19,7 @@ describe('selection', function()
 
   after_each(function()
     notify:revert()
+    vim.cmd('bdelete!')
   end)
 
   describe('current()', function()

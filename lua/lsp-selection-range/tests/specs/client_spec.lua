@@ -1,4 +1,6 @@
 local client_module = require('lsp-selection-range.client')
+local utils = require('lsp-selection-range.tests.helpers.utils')
+local simple_php = require('lsp-selection-range.tests.helpers.simple-php')
 local stub = require('luassert.stub')
 
 describe('client', function()
@@ -64,6 +66,68 @@ describe('client', function()
       assert.same(ts_client, client, 'the "ts" client must be returned')
 
       ui_select:revert()
+    end)
+  end)
+
+  describe('fetch_selection_range()', function()
+    local client = { name = 'fake_client' }
+    local request_sync, notify
+
+    before_each(function()
+      request_sync = stub(client, 'request_sync')
+      request_sync.returns({ res = nil })
+      notify = stub(vim, 'notify')
+    end)
+
+    after_each(function()
+      request_sync:revert()
+      notify:revert()
+    end)
+
+    it('notifies when reaching the request times out', function()
+      request_sync.returns(nil, 'error message')
+
+      client_module.fetch_selection_range(client, {}, 1)
+
+      assert.stub(notify).was_called_with('fake_client: timeout: error message', 4)
+    end)
+
+    it('notifies when the server responded with an error', function()
+      request_sync.returns({ err = { code = '007', message = 'Bond, James Bond!' } })
+
+      client_module.fetch_selection_range(client, {})
+
+      assert.stub(notify).was_called_with('fake_client: 007: Bond, James Bond!', 4)
+    end)
+
+    it('generates params when not provided', function()
+      vim.cmd('edit ' .. simple_php.file_path)
+      utils.move_cursor_to(simple_php.positions.on_last_return_var)
+
+      client_module.fetch_selection_range(client)
+
+      assert.stub(request_sync).was_called_with('textDocument/selectionRange', {
+        textDocument = { uri = 'file://' .. vim.api.nvim_buf_get_name(0) },
+        positions = { simple_php.positions.on_last_return_var },
+      }, nil, nil)
+      vim.cmd('bdelete!')
+    end)
+
+    it('returns `nil` when the server does not provide a result', function()
+      request_sync.returns({ result = {} })
+
+      local selection_range = client_module.fetch_selection_range(client)
+
+      assert.same(nil, selection_range)
+    end)
+
+    it('returns the selection range when the server provide a result', function()
+      local expected_selection_range = simple_php.selection_ranges.from_last_return.variable
+      request_sync.returns({ result = { expected_selection_range } })
+
+      local selection_range = client_module.fetch_selection_range(client)
+
+      assert.same(expected_selection_range, selection_range)
     end)
   end)
 end)
