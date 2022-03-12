@@ -1,4 +1,5 @@
 local lsp_selection_range = require('lsp-selection-range')
+local client_module = require('lsp-selection-range.client')
 local Range = require('lsp-selection-range.range')
 local selection = require('lsp-selection-range.selection')
 local utils = require('lsp-selection-range.tests.helpers.utils')
@@ -127,4 +128,25 @@ describe('expand()', function()
       assert.same(expected_visual_range, selection.current())
     end
   )
+end)
+
+describe('setup', function()
+  after_each(function()
+    lsp_selection_range.setup()
+  end)
+
+  describe('get_client', function()
+    it('use defaults when not provided', function()
+      lsp_selection_range.setup()
+
+      assert.same(client_module.select, lsp_selection_range.get_client, 'get_client function not correctly defined')
+    end)
+
+    it('sets the function used to choose which client to use', function()
+      local custom_function = function() end
+      lsp_selection_range.setup({ get_client = custom_function })
+
+      assert.same(custom_function, lsp_selection_range.get_client, 'get_client function not correctly defined')
+    end)
+  end)
 end)

@@ -32,7 +32,11 @@
 ---@field message string
 ---@field data? any
 
+---@alias SelectClientFunc fun(): Client|nil
+
 local if_nil = vim.F.if_nil
+-- TODO: is it needed to reset it when a new client is attached ?
+local clients_by_filetype = {}
 local M = {}
 
 --- Select a client with the `selectionRangeProvider` capability
@@ -45,10 +49,6 @@ local M = {}
 ---
 ---@see vim.ui.select
 function M.select()
-  -- TODO handle caching clients:
-  -- * keep the selected client in memory for each filetype
-  -- * reset the cached client when new client is attached for the filetype (using on_attach)
-  -- * create wrapper function to add the caching logic around any function to use in place of get_client()
   local clients = vim.tbl_values(vim.lsp.buf_get_clients())
 
   -- Keep only clients with matching capabilities
@@ -80,6 +80,31 @@ function M.select()
   end)
 
   return selected_client
+end
+
+--- Decorate a selection method by only asking once per filetype
+---
+--- If the selector returns `nil` the value is not cached and the selector will be call again the next time
+--- until a client is returened.
+---
+---@param selector SelectClientFunc
+---
+---@return SelectClientFunc
+function M.select_by_filetype(selector)
+  return function()
+    vim.validate({ selector = { selector, 'function' } })
+    local filetype = vim.api.nvim_buf_get_option(0, 'filetype')
+
+  if "" == filetype then
+    return selector()
+  end
+
+  if nil == clients_by_filetype[filetype] then
+    clients_by_filetype[filetype] = selector()
+  end
+
+  return clients_by_filetype[filetype]
+  end
 end
 
 --- Fetches selection range from client

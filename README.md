@@ -44,6 +44,32 @@ nvim_lsp['your-server-name'].setup({
 })
 ```
 
+## Caching the choice of client per filetype
+
+When you have more than one server offering the selection range feature you'll be asked to choose which one to use every time you want to select something.
+This can quickly be annoying, to help you with that you can add a little bit of configuration to setup the plugin
+accordingly:
+
+```lua
+local lsp_selection_range = require('lsp-selection-range')
+local lsr_client = require('lsp-selection-range.client')
+
+lsp_selection_range.setup({
+  get_client = lsr_client.select_by_filetype(lsr_client.select)
+})
+```
+
+You can provide to `get_client` any function with the following signature `func(): Client|nil`.
+
+The `lsr_client.select` is the default implementation used by this plugin:
+* If no client supports the feature: returns `nil`
+* If only one client supports the feature: returns it
+* If more than one client support the feature: will ask you to choose using `vim.select` UI
+
+The `lsr_client.select_by_filetype` will create a wrapper around any function returning a client and memorized the returned client for each filetype.
+
 # Documentation
 
-The documentation is available in Neovim with `:h lsp-selection-range`.
+There is no documentation outside this `README.md`.
+The plugin does not yet integrate enough configuration or possibilities to justify investing time into setting up an automatic generation of the documentation.
+And since I far more to lazy to do it by hand... :)

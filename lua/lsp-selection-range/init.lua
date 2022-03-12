@@ -21,6 +21,11 @@
 ---@field parent? SelectionRange
 ---@field range LspRange
 
+--- Description of the configuration options accepted by the setup() function
+---
+---@class LspSelectionRangeConfig
+---@field get_client? SelectClientFunc #Defaults to require('lsp-selection-range.client').select
+
 local client_module = require('lsp-selection-range.client')
 local selection = require('lsp-selection-range.selection')
 local Range = require('lsp-selection-range.range')
@@ -112,6 +117,18 @@ function M.expand()
 
   remember_last_selection_range(selection_range)
   selection.select(Range.from_table(selection_range.range))
+end
+
+--- Configure the plugin
+---
+--- @param config LspSelectionRangeConfig
+function M.setup(config)
+  config = config or {}
+  vim.validate({
+    get_client = { config.get_client, 'function', true },
+  })
+
+  M.get_client = config.get_client or client_module.select
 end
 
 return M

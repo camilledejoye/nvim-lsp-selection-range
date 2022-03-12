@@ -69,6 +69,72 @@ describe('client', function()
     end)
   end)
 
+  describe('select_by_filetype()', function()
+    local predefined_client = { name = 'php_server' }
+    local predifined_client_selector = function()
+      return predefined_client
+    end
+
+    after_each(function()
+      -- Since I use a local variable I need to reload the module between each test
+      require('plenary.reload').reload_module('lsp-selection-range.client')
+      client_module = require('lsp-selection-range.client')
+    end)
+
+    it('returns the client provided by the selector when there is no filetype', function()
+      local selected_client = client_module.select_by_filetype(predifined_client_selector)()
+
+      assert.same(predefined_client, selected_client)
+    end)
+
+    it('asks the selector only once when a client is returned', function()
+      vim.cmd('set ft=php')
+      local error_selector = function()
+        error('this selector must not be called!')
+      end
+
+      client_module.select_by_filetype(predifined_client_selector)()
+      local selected_client = client_module.select_by_filetype(error_selector)()
+
+      assert.same(predefined_client, selected_client)
+    end)
+
+    it('handles multiple filetypes simultaneously', function()
+      local servers = {
+        php = { name = 'php_server' },
+        lua = { name = 'lua_server' },
+      }
+      local function select_for_filetype(filetype)
+        vim.cmd('set ft=' .. filetype)
+
+        return client_module.select_by_filetype(function()
+          return servers[vim.api.nvim_buf_get_option(0, 'filetype')] or nil
+        end)()
+      end
+
+      -- Initialize the cache
+      select_for_filetype('php')
+      select_for_filetype('lua')
+      select_for_filetype('vim')
+
+      assert.same(servers.php, select_for_filetype('php'))
+      assert.same(servers.lua, select_for_filetype('lua'))
+      assert.same(nil, select_for_filetype('vim'))
+    end)
+
+    it('keeps asking the selector when no client is returned', function()
+      vim.cmd('set ft=php')
+      local nil_selector = function()
+        return nil
+      end
+
+      client_module.select_by_filetype(nil_selector)()
+      local selected_client = client_module.select_by_filetype(predifined_client_selector)()
+
+      assert.same(predefined_client, selected_client)
+    end)
+  end)
+
   describe('fetch_selection_range()', function()
     local client = { name = 'fake_client' }
     local request_sync, notify
