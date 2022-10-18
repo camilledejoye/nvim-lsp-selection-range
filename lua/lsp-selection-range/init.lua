@@ -71,10 +71,13 @@ M.get_client = client_module.select
 ---@see vim.lsp.protocol.make_client_capabilities()
 function M.update_capabilities(capabilities)
   vim.validate({ capabilities = { capabilities, 'table', true } })
+  if not capabilities then
+    vim.notify_once('lsp-selection-range.update_capabilities: Passing nil is deprecated.', vim.log.levels.WARN)
+  end
   capabilities = capabilities or vim.lsp.protocol.make_client_capabilities()
 
-  capabilities.textDocument = vim.tbl_extend('force', capabilities.textDocument or {}, {
-    selectionRange = { dynamicRegistration = false },
+  capabilities.textDocument = vim.tbl_deep_extend('keep', capabilities.textDocument or {}, {
+    selectionRange = { dynamicRegistration = false }
   })
 
   return capabilities

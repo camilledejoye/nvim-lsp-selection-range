@@ -12,11 +12,15 @@ local function use_client(client)
 end
 
 describe('update_capabilities()', function()
-  it('creates new capabilities including "textDocument/selectionRange" and returns them', function()
+  it('creates new capabilities including "textDocument/selectionRange" and raises deprecation on nil', function()
     local expectedCapabilities = vim.lsp.protocol.make_client_capabilities()
     expectedCapabilities.textDocument.selectionRange = { dynamicRegistration = false }
+    local notify_once = stub(vim, 'notify_once')
 
     local capabilities = lsp_selection_range.update_capabilities(nil)
+
+    assert.stub(notify_once)
+          .was_called_with('lsp-selection-range.update_capabilities: Passing nil is deprecated.', vim.log.levels.WARN)
 
     assert.same(expectedCapabilities, capabilities)
   end)
@@ -34,6 +38,21 @@ describe('update_capabilities()', function()
     }
     local expectedCapabilities = vim.deepcopy(capabilities)
     expectedCapabilities.textDocument.selectionRange = { dynamicRegistration = false }
+
+    capabilities = lsp_selection_range.update_capabilities(capabilities)
+
+    assert.same(expectedCapabilities, capabilities)
+  end)
+
+  it('does not override dynamicRegistration of existing "textDocument/selectionRange" capabilities', function()
+    local capabilities = {
+      textDocument = {
+        selectionRange = {
+          dynamicRegistration = true,
+        },
+      },
+    }
+    local expectedCapabilities = vim.deepcopy(capabilities)
 
     capabilities = lsp_selection_range.update_capabilities(capabilities)
 
