@@ -18,10 +18,11 @@ And then you need to configure a mapping to visually select accordingly to your 
 local nvim_lsp = require('lspconfig')
 local lsp_selection_range = require('lsp-selection-range')
 
--- Generate the default Neovim LSP capabilities
-local capabilities = vim.lsp.protocol.make_client_capabilities()
--- Update the default capabilities
-capabilities = lps_selection_range.update_capabilities(capabilities)
+-- Update existing capabilities
+capabilities = lsp_selection_range.update_capabilities(capabilities)
+
+-- If you don't already have custom capabilities you can simply do
+local capabilities = lsp_selection_range.update_capabilities({})
 
 local on_attach = function(client, bufnr)
   local bmap = function(mode, lhs, rhs, options)
